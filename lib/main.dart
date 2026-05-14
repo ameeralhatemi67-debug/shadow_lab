@@ -2,15 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
+import 'package:shadow_app/models/labs.dart';
 
 // Screens & Utilities
 import 'homepage.dart';
 import 'hive_adapters.dart';
-import 'colortheme.dart'; // Imports your custom AppTheme
-import 'providers/shadow_provider.dart'; // Resolves the 'themeModeProvider' error
+import 'colortheme.dart';
+import 'providers/shadow_provider.dart';
 
 void main() async {
-  // Try/catch block with the unused 'stacktrace' removed
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -24,9 +24,17 @@ void main() async {
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(ShadowPairAdapter());
     }
+    // --- NEW: Register the Lab Adapter (TypeID 2) ---
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(LabAdapter());
+    }
 
-    // Open the box
-    await Hive.openBox('shadow_box');
+    // Open the databases
+    await Hive.openBox(
+      'shadow_box',
+    ); // Keep old box open temporarily to prevent errors
+    // --- NEW: Open the dedicated workspace database ---
+    await Hive.openBox<Lab>('labs_box');
 
     // Launch the app
     runApp(const ProviderScope(child: MyApp()));
@@ -51,7 +59,6 @@ void main() async {
   }
 }
 
-// Upgraded to a ConsumerWidget to listen to Riverpod states
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -62,10 +69,10 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'Shadow Lab',
-      // Apply your specific design system from colortheme.dart
+      debugShowCheckedModeBanner: false, // Clean up the top right corner
+      themeMode: themeMode,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: themeMode,
       home: const HomePage(),
     );
   }

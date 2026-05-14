@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shadow_pair.dart';
+import 'lab_provider.dart';
 
-// --- UPGRADED THEME PROVIDER ---
+// --- UPGRADED THEME PROVIDER (Preserved) ---
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() => ThemeMode.light;
@@ -17,24 +18,25 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(() {
   return ThemeModeNotifier();
 });
 
-// --- EXISTING SHADOW PROVIDER ---
-class ShadowListNotifier extends Notifier<List<ShadowPair>> {
-  @override
-  List<ShadowPair> build() {
-    return [];
-  }
+// --- SHADOW LOGIC CONTROLLER ---
+class ShadowController {
+  final Ref ref;
+  ShadowController(this.ref);
 
-  void addShadowPair(String tokenName) {
+  void addShadowPair(String labId, String tokenName) {
+    final labNotifier = ref.read(labProvider.notifier);
+    final lab = labNotifier.getLabById(labId);
+    if (lab == null) return;
+
     final newPair = ShadowPair(
       id: tokenName,
-      // Layer 1 Defaults
       light: ShadowSettings(
         blur: 10,
         distance: 4,
         angle: 45,
         colorValue: 0x33000000,
         size: 0,
-        isVisible: true, // NEW: Added size property
+        isVisible: true,
       ),
       dark: ShadowSettings(
         blur: 10,
@@ -42,42 +44,48 @@ class ShadowListNotifier extends Notifier<List<ShadowPair>> {
         angle: 45,
         colorValue: 0x99000000,
         size: 0,
-        isVisible: true, // NEW: Added size property
+        isVisible: true,
       ),
-      // Layer 2 Defaults
-      // FIX: Changed colorValue from 0x00000000 so it actually has opacity!
       light2: ShadowSettings(
         blur: 0,
         distance: 0,
         angle: 45,
-        colorValue: 0x22000000, // Roughly 13% opacity black
+        colorValue: 0x22000000,
         size: 0,
-        isVisible: true, // NEW: Added size property
+        isVisible: true,
       ),
       dark2: ShadowSettings(
         blur: 0,
         distance: 0,
         angle: 45,
-        colorValue: 0x66000000, // Roughly 40% opacity black
+        colorValue: 0x66000000,
         size: 0,
-        isVisible: true, // NEW: Added size property
+        isVisible: true,
       ),
       isLinked: true,
       mainText: "Text",
       subText: "text",
     );
 
-    state = [...state, newPair];
+    // Grab the existing shadows, add the new one, and save the Lab
+    final updatedShadows = List<ShadowPair>.from(lab.shadows)..add(newPair);
+    labNotifier.updateLabShadows(labId, updatedShadows);
   }
 
   void updateShadow(
-    String id,
+    String labId,
+    String shadowId,
     bool isEditingLightMode,
     int layerIndex,
     ShadowSettings newSettings,
   ) {
-    state = state.map((pair) {
-      if (pair.id != id) return pair;
+    final labNotifier = ref.read(labProvider.notifier);
+    final lab = labNotifier.getLabById(labId);
+    if (lab == null) return;
+
+    // EXACT PRESERVED MATH LOGIC
+    final updatedShadows = lab.shadows.map((pair) {
+      if (pair.id != shadowId) return pair;
 
       ShadowPair updatedPair = ShadowPair(
         id: pair.id,
@@ -95,30 +103,34 @@ class ShadowListNotifier extends Notifier<List<ShadowPair>> {
         if (layerIndex == 2) updatedPair.light2 = newSettings;
 
         if (updatedPair.isLinked) {
-          if (layerIndex == 1) {
+          if (layerIndex == 1)
             updatedPair.dark = newSettings.copyWith(
               colorValue: updatedPair.dark.colorValue,
             );
-          }
-          if (layerIndex == 2) {
+          if (layerIndex == 2)
             updatedPair.dark2 = newSettings.copyWith(
               colorValue: updatedPair.dark2.colorValue,
             );
-          }
         }
       } else {
         if (layerIndex == 1) updatedPair.dark = newSettings;
         if (layerIndex == 2) updatedPair.dark2 = newSettings;
         updatedPair.isLinked = false;
       }
-
       return updatedPair;
     }).toList();
+
+    labNotifier.updateLabShadows(labId, updatedShadows);
   }
 
-  void reLink(String id, bool currentViewIsLight) {
-    state = state.map((pair) {
-      if (pair.id != id) return pair;
+  void reLink(String labId, String shadowId, bool currentViewIsLight) {
+    final labNotifier = ref.read(labProvider.notifier);
+    final lab = labNotifier.getLabById(labId);
+    if (lab == null) return;
+
+    // EXACT PRESERVED RELINK LOGIC
+    final updatedShadows = lab.shadows.map((pair) {
+      if (pair.id != shadowId) return pair;
 
       ShadowPair updatedPair = ShadowPair(
         id: pair.id,
@@ -146,15 +158,24 @@ class ShadowListNotifier extends Notifier<List<ShadowPair>> {
           colorValue: updatedPair.light2.colorValue,
         );
       }
-
       return updatedPair;
     }).toList();
+
+    labNotifier.updateLabShadows(labId, updatedShadows);
   }
 
-  void updateText(String id, String newMainText, String newSubText) {
-    state = state.map((pair) {
-      if (pair.id != id) return pair;
+  void updateText(
+    String labId,
+    String shadowId,
+    String newMainText,
+    String newSubText,
+  ) {
+    final labNotifier = ref.read(labProvider.notifier);
+    final lab = labNotifier.getLabById(labId);
+    if (lab == null) return;
 
+    final updatedShadows = lab.shadows.map((pair) {
+      if (pair.id != shadowId) return pair;
       return ShadowPair(
         id: pair.id,
         light: pair.light,
@@ -166,11 +187,10 @@ class ShadowListNotifier extends Notifier<List<ShadowPair>> {
         subText: newSubText,
       );
     }).toList();
+
+    labNotifier.updateLabShadows(labId, updatedShadows);
   }
 }
 
-final shadowProvider = NotifierProvider<ShadowListNotifier, List<ShadowPair>>(
-  () {
-    return ShadowListNotifier();
-  },
-);
+// Provide the controller so the UI can use it
+final shadowControllerProvider = Provider((ref) => ShadowController(ref));

@@ -112,3 +112,60 @@ class ShadowPairAdapter extends TypeAdapter<ShadowPair> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class LabAdapter extends TypeAdapter<Lab> {
+  @override
+  final typeId = 2;
+
+  @override
+  Lab read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Lab(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      shadows: fields[2] == null
+          ? const []
+          : (fields[2] as List).cast<ShadowPair>(),
+      isPinned: fields[3] == null ? false : fields[3] as bool,
+      backgroundColor: (fields[4] as num?)?.toInt(),
+      cardColor: (fields[5] as num?)?.toInt(),
+      mainTextColor: (fields[6] as num?)?.toInt(),
+      subTextColor: (fields[7] as num?)?.toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Lab obj) {
+    writer
+      ..writeByte(8)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.shadows)
+      ..writeByte(3)
+      ..write(obj.isPinned)
+      ..writeByte(4)
+      ..write(obj.backgroundColor)
+      ..writeByte(5)
+      ..write(obj.cardColor)
+      ..writeByte(6)
+      ..write(obj.mainTextColor)
+      ..writeByte(7)
+      ..write(obj.subTextColor);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LabAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

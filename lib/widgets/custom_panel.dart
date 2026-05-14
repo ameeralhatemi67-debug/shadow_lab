@@ -3,6 +3,7 @@ import 'dart:ui'; // NEW: Required for the background blur effect
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:shadow_app/providers/lab_provider.dart';
 import '../models/shadow_pair.dart';
 import '../providers/shadow_provider.dart';
 import '../colortheme.dart';
@@ -101,9 +102,18 @@ class _CustomPanelState extends ConsumerState<CustomPanel> {
                                           : 'Unlinked',
                                       onPressed: () {
                                         if (!widget.pair.isLinked) {
-                                          ref
-                                              .read(shadowProvider.notifier)
-                                              .reLink(widget.pair.id, !isDark);
+                                          final labId = ref.read(
+                                            activeLabIdProvider,
+                                          ); // Get current folder
+                                          if (labId != null) {
+                                            ref
+                                                .read(shadowControllerProvider)
+                                                .reLink(
+                                                  labId,
+                                                  widget.pair.id,
+                                                  !isDark,
+                                                );
+                                          }
                                         }
                                       },
                                     ),
@@ -366,15 +376,25 @@ class _CustomPanelState extends ConsumerState<CustomPanel> {
     );
   }
 
+  // Sends the modified object back to Riverpod
   void _updateSetting(
     WidgetRef ref,
     ShadowSettings newSettings,
     bool isDark,
     int layerIndex,
   ) {
-    ref
-        .read(shadowProvider.notifier)
-        .updateShadow(widget.pair.id, !isDark, layerIndex, newSettings);
+    final labId = ref.read(activeLabIdProvider); // Get current folder
+    if (labId != null) {
+      ref
+          .read(shadowControllerProvider)
+          .updateShadow(
+            labId,
+            widget.pair.id,
+            !isDark,
+            layerIndex,
+            newSettings,
+          );
+    }
   }
 
   void _showColorPicker(

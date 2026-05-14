@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inset_shadow/flutter_inset_shadow.dart' as inset;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadow_app/providers/lab_provider.dart';
 import '../models/shadow_pair.dart';
 import '../utils/trig_math.dart';
 import '../colortheme.dart';
@@ -28,31 +29,30 @@ class ShadowCard extends ConsumerWidget {
     final layer1 = isDark ? pair.dark : pair.light;
     final layer2 = isDark ? pair.dark2 : pair.light2;
 
+    // --- 1. THE OUTER WRAPPER (Catches all empty space taps for Shadow Edit) ---
     return GestureDetector(
-      onTap: onTap, // Tapping the card selects it for the CustomPanel
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap, // Opens the CustomPanel
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         height: 80,
         decoration: inset.BoxDecoration(
           color: colors.blc,
           borderRadius: BorderRadius.circular(16),
-          // Note: Border removed as requested!
           boxShadow: [
-            // --- SHADOW LAYER 1 ---
-            if (layer1.isVisible) // NEW: Respect visibility toggle
+            if (layer1.isVisible)
               inset.BoxShadow(
                 color: Color(layer1.colorValue),
                 blurRadius: layer1.blur,
-                spreadRadius: layer1.size, // FIX: The Size lever now works!
+                spreadRadius: layer1.size,
                 offset: getOffsetFromAngle(layer1.angle, layer1.distance),
                 inset: layer1.isInset,
               ),
-            // --- SHADOW LAYER 2 ---
-            if (layer2.isVisible) // NEW: Respect visibility toggle
+            if (layer2.isVisible)
               inset.BoxShadow(
                 color: Color(layer2.colorValue),
                 blurRadius: layer2.blur,
-                spreadRadius: layer2.size, // FIX: The Size lever now works!
+                spreadRadius: layer2.size,
                 offset: getOffsetFromAngle(layer2.angle, layer2.distance),
                 inset: layer2.isInset,
               ),
@@ -63,22 +63,28 @@ class ShadowCard extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // --- THE TEXT AREA ---
-              // Wrapped in an Expanded and GestureDetector so tapping specifically here edits text
-              Expanded(
+              // --- 2. THE DYNAMIC TEXT WRAPPER (Left) ---
+              // 'Flexible' shrinks to perfectly fit your text, but prevents overflow
+              Flexible(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => _showTextEditor(context, ref, colors),
+                  onTap: () => _showTextEditor(
+                    context,
+                    ref,
+                    colors,
+                  ), // Opens Text Editor
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize:
+                        MainAxisSize.min, // Shrinks vertically to text height
                     children: [
                       Text(
                         pair.mainText,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: colors.mtext, // Uses Main Text Color
+                          color: colors.mtext,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -86,10 +92,7 @@ class ShadowCard extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         pair.subText,
-                        style: TextStyle(
-                          fontSize: 12, // Smaller Size
-                          color: colors.stext, // Uses Secondary Text Color
-                        ),
+                        style: TextStyle(fontSize: 12, color: colors.stext),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -98,7 +101,8 @@ class ShadowCard extends ConsumerWidget {
                 ),
               ),
 
-              // --- THE COPY BUTTON ---
+              // --- 3. THE COPY BUTTON (Right) ---
+              // Stays perfectly anchored to the right side!
               IconButton(
                 icon: Icon(Icons.copy_all, color: colors.mtext),
                 onPressed: onCopy,
@@ -174,14 +178,19 @@ class ShadowCard extends ConsumerWidget {
             ),
             TextButton(
               onPressed: () {
-                // Safely fire the global text update to Riverpod
-                ref
-                    .read(shadowProvider.notifier)
-                    .updateText(
-                      pair.id,
-                      mainController.text.isEmpty ? " " : mainController.text,
-                      subController.text.isEmpty ? " " : subController.text,
-                    );
+                // Get the current folder
+                final labId = ref.read(activeLabIdProvider);
+                if (labId != null) {
+                  // Fire the text update to the specific Lab
+                  ref
+                      .read(shadowControllerProvider)
+                      .updateText(
+                        labId,
+                        pair.id,
+                        mainController.text.isEmpty ? " " : mainController.text,
+                        subController.text.isEmpty ? " " : subController.text,
+                      );
+                }
                 Navigator.pop(context);
               },
               child: Text(
