@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadow_app/models/labs.dart';
 import 'package:shadow_app/widgets/shadow_card.dart';
+import 'package:flutter/services.dart'; // Required for copying to clipboard
+import '../utils/export_templates.dart'; // Your code generator!
 
 // =========================================================================
 // VIEW 1: THE LIST (ALL VIEW / DEFAULT)
@@ -31,9 +33,25 @@ class AllView extends ConsumerWidget {
         final pair = activeLab.shadows[index];
         return ShadowCard(
           pair: pair,
-          onCopy: () {
-            // Export logic will be hooked up later
+          onCopy: () async {
+            // 1. Generate the Flutter/CSS code using your template
+            // (Make sure this matches the exact class/method name in your export_templates.dart)
+
+            final generatedCode = ExportTemplates.generateFlutterCode(pair);
+            await Clipboard.setData(ClipboardData(text: generatedCode));
+
+            // 3. Show a quick visual confirmation to the user
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Shadow code copied to clipboard!'),
+                  backgroundColor: mTextColor, // Uses your custom UI colors
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
           },
+
           onTap: () => onShadowSelected(pair.id),
         );
       },
