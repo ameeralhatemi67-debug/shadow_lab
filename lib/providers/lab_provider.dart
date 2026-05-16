@@ -22,16 +22,30 @@ final viewModeProvider = NotifierProvider<ViewModeNotifier, ViewMode>(
 );
 
 // --- GLOBAL OVERRIDE STATE ---
-class GlobalOverrideNotifier extends Notifier<bool> {
+// --- NEW: MODE-ISOLATED GLOBAL SOURCE TRACKERS ---
+class GlobalLightLabNotifier extends Notifier<String?> {
   @override
-  bool build() => false; // Starts OFF by default
+  String? build() => null; // Null means global is OFF for Light Mode
 
-  void toggle() => state = !state;
+  void setGlobal(String? labId) => state = labId;
 }
 
-final globalOverrideProvider = NotifierProvider<GlobalOverrideNotifier, bool>(
-  () => GlobalOverrideNotifier(),
-);
+final globalLightLabIdProvider =
+    NotifierProvider<GlobalLightLabNotifier, String?>(
+      () => GlobalLightLabNotifier(),
+    );
+
+class GlobalDarkLabNotifier extends Notifier<String?> {
+  @override
+  String? build() => null; // Null means global is OFF for Dark Mode
+
+  void setGlobal(String? labId) => state = labId;
+}
+
+final globalDarkLabIdProvider =
+    NotifierProvider<GlobalDarkLabNotifier, String?>(
+      () => GlobalDarkLabNotifier(),
+    );
 
 // --- ACTIVE LAB STATE ---
 class ActiveLabNotifier extends Notifier<String?> {
@@ -71,14 +85,6 @@ class LabListNotifier extends Notifier<List<Lab>> {
       _box.put(defaultLab.id, defaultLab);
     }
 
-    // --- NEW: Ensure a hidden Global Profile exists to store global colors! ---
-    if (!_box.containsKey('GLOBAL_PROFILE')) {
-      _box.put(
-        'GLOBAL_PROFILE',
-        Lab(id: 'GLOBAL_PROFILE', name: 'Global Profile'),
-      );
-    }
-
     return _getSortedLabs();
   }
 
@@ -86,8 +92,8 @@ class LabListNotifier extends Notifier<List<Lab>> {
   Lab? getGlobalProfile() => _box.get('GLOBAL_PROFILE');
 
   List<Lab> _getSortedLabs() {
-    // --- NEW: Filter out the hidden GLOBAL_PROFILE so it doesn't show in the UI list! ---
-    final labs = _box.values.where((l) => l.id != 'GLOBAL_PROFILE').toList();
+    // No longer needs to filter out 'GLOBAL_PROFILE'!
+    final labs = _box.values.toList();
     labs.sort((a, b) => a.isPinned == b.isPinned ? 0 : (a.isPinned ? -1 : 1));
     return labs;
   }

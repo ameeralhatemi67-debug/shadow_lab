@@ -31,15 +31,16 @@ class ShadowCard extends ConsumerWidget {
     final activeLab = labs.where((l) => l.id == activeLabId).firstOrNull;
     final defaultColors = Theme.of(context).extension<CustomColors>()!;
 
-    // --- 2. Fetch Global Profile State ---
-    final isGlobalEnabled = ref.watch(globalOverrideProvider);
-    final globalProfile = ref.read(labProvider.notifier).getGlobalProfile();
+    // --- 2. Fetch Mode-Isolated Global State ---
+    final globalLightId = ref.watch(globalLightLabIdProvider);
+    final globalDarkId = ref.watch(globalDarkLabIdProvider);
 
     // --- 3. The Magic Resolver Line ---
     final colors = ColorResolver.resolve(
       activeLab,
-      globalProfile,
-      isGlobalEnabled,
+      labs, // Pass the entire list of workspaces
+      globalLightId,
+      globalDarkId,
       defaultColors,
       isDark,
     );
