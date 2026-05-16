@@ -134,13 +134,24 @@ class LabAdapter extends TypeAdapter<Lab> {
       cardColor: (fields[5] as num?)?.toInt(),
       mainTextColor: (fields[6] as num?)?.toInt(),
       subTextColor: (fields[7] as num?)?.toInt(),
+      lightBgColor: (fields[8] as num?)?.toInt(),
+      lightCardColor: (fields[9] as num?)?.toInt(),
+      lightMainTextColor: (fields[10] as num?)?.toInt(),
+      lightSubTextColor: (fields[11] as num?)?.toInt(),
+      darkBgColor: (fields[12] as num?)?.toInt(),
+      darkCardColor: (fields[13] as num?)?.toInt(),
+      darkMainTextColor: (fields[14] as num?)?.toInt(),
+      darkSubTextColor: (fields[15] as num?)?.toInt(),
+      slcColor: (fields[16] as num?)?.toInt(),
+      lightSlcColor: (fields[17] as num?)?.toInt(),
+      darkSlcColor: (fields[18] as num?)?.toInt(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Lab obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -156,7 +167,29 @@ class LabAdapter extends TypeAdapter<Lab> {
       ..writeByte(6)
       ..write(obj.mainTextColor)
       ..writeByte(7)
-      ..write(obj.subTextColor);
+      ..write(obj.subTextColor)
+      ..writeByte(8)
+      ..write(obj.lightBgColor)
+      ..writeByte(9)
+      ..write(obj.lightCardColor)
+      ..writeByte(10)
+      ..write(obj.lightMainTextColor)
+      ..writeByte(11)
+      ..write(obj.lightSubTextColor)
+      ..writeByte(12)
+      ..write(obj.darkBgColor)
+      ..writeByte(13)
+      ..write(obj.darkCardColor)
+      ..writeByte(14)
+      ..write(obj.darkMainTextColor)
+      ..writeByte(15)
+      ..write(obj.darkSubTextColor)
+      ..writeByte(16)
+      ..write(obj.slcColor)
+      ..writeByte(17)
+      ..write(obj.lightSlcColor)
+      ..writeByte(18)
+      ..write(obj.darkSlcColor);
   }
 
   @override

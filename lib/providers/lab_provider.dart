@@ -21,6 +21,18 @@ final viewModeProvider = NotifierProvider<ViewModeNotifier, ViewMode>(
   () => ViewModeNotifier(),
 );
 
+// --- GLOBAL OVERRIDE STATE ---
+class GlobalOverrideNotifier extends Notifier<bool> {
+  @override
+  bool build() => false; // Starts OFF by default
+
+  void toggle() => state = !state;
+}
+
+final globalOverrideProvider = NotifierProvider<GlobalOverrideNotifier, bool>(
+  () => GlobalOverrideNotifier(),
+);
+
 // --- ACTIVE LAB STATE ---
 class ActiveLabNotifier extends Notifier<String?> {
   @override
@@ -50,8 +62,7 @@ class LabListNotifier extends Notifier<List<Lab>> {
   List<Lab> build() {
     _box = Hive.box<Lab>('labs_box');
 
-    // --- FIX 1: THE SMART DEFAULT LAB CHECK ---
-    // Only ever runs if the user has 0 labs (like on a fresh install)
+    // --- THE SMART DEFAULT LAB CHECK ---
     if (_box.isEmpty) {
       final defaultLab = Lab(
         id: 'lab_${DateTime.now().millisecondsSinceEpoch}',
@@ -60,7 +71,25 @@ class LabListNotifier extends Notifier<List<Lab>> {
       _box.put(defaultLab.id, defaultLab);
     }
 
+    // --- NEW: Ensure a hidden Global Profile exists to store global colors! ---
+    if (!_box.containsKey('GLOBAL_PROFILE')) {
+      _box.put(
+        'GLOBAL_PROFILE',
+        Lab(id: 'GLOBAL_PROFILE', name: 'Global Profile'),
+      );
+    }
+
     return _getSortedLabs();
+  }
+
+  // --- NEW: Helper to safely fetch the global profile ---
+  Lab? getGlobalProfile() => _box.get('GLOBAL_PROFILE');
+
+  List<Lab> _getSortedLabs() {
+    // --- NEW: Filter out the hidden GLOBAL_PROFILE so it doesn't show in the UI list! ---
+    final labs = _box.values.where((l) => l.id != 'GLOBAL_PROFILE').toList();
+    labs.sort((a, b) => a.isPinned == b.isPinned ? 0 : (a.isPinned ? -1 : 1));
+    return labs;
   }
 
   // --- CRUD OPERATIONS ---
@@ -90,24 +119,64 @@ class LabListNotifier extends Notifier<List<Lab>> {
     }
   }
 
+  // --- WORKSPACE COLOR CUSTOMIZATION ---
+  // Mode-aware color updating to completely isolate light and dark setups
   void updateWorkspaceColors(
     String labId, {
+    required bool isDarkMode,
     int? bg,
     int? card,
     int? mText,
     int? sText,
+    int? slc,
   }) {
     final lab = _box.get(labId);
-    if (lab != null) {
-      final updated = lab.copyWith(
-        backgroundColor: bg,
-        cardColor: card,
-        mainTextColor: mText,
-        subTextColor: sText,
-      );
-      _box.put(labId, updated);
-      state = _getSortedLabs();
-    }
+    if (lab == null) return;
+
+    final updated = isDarkMode
+        ? lab.copyWith(
+            darkBgColor: bg != null ? () => bg : null,
+            darkCardColor: card != null ? () => card : null,
+            darkMainTextColor: mText != null ? () => mText : null,
+            darkSubTextColor: sText != null ? () => sText : null,
+            darkSlcColor: slc != null ? () => slc : null,
+          )
+        : lab.copyWith(
+            lightBgColor: bg != null ? () => bg : null,
+            lightCardColor: card != null ? () => card : null,
+            lightMainTextColor: mText != null ? () => mText : null,
+            lightSubTextColor: sText != null ? () => sText : null,
+            lightSlcColor: slc != null ? () => slc : null,
+          );
+
+    _box.put(labId, updated);
+    state = _getSortedLabs();
+  }
+
+  // --- FIXED RESET LOGIC ---
+  // Explicitly forces configuration fields back to null database states
+  void resetWorkspaceColors(String labId, bool isDarkMode) {
+    final lab = _box.get(labId);
+    if (lab == null) return;
+
+    final updated = isDarkMode
+        ? lab.copyWith(
+            darkBgColor: () => null,
+            darkCardColor: () => null,
+            darkMainTextColor: () => null,
+            darkSubTextColor: () => null,
+            darkSlcColor: () => null,
+          )
+        : lab.copyWith(
+            lightBgColor: () => null,
+            lightCardColor: () => null,
+            lightMainTextColor: () => null,
+            lightSubTextColor: () => null,
+            lightSlcColor: () => null,
+          );
+
+    _box.put(labId, updated);
+    state = _getSortedLabs();
   }
 
   Lab? getLabById(String id) => _box.get(id);
@@ -118,12 +187,6 @@ class LabListNotifier extends Notifier<List<Lab>> {
       _box.put(labId, lab.copyWith(shadows: updatedShadows));
       state = _getSortedLabs();
     }
-  }
-
-  List<Lab> _getSortedLabs() {
-    final labs = _box.values.toList();
-    labs.sort((a, b) => a.isPinned == b.isPinned ? 0 : (a.isPinned ? -1 : 1));
-    return labs;
   }
 }
 

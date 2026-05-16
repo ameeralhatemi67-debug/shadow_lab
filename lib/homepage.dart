@@ -24,19 +24,26 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Read Riverpod State
+    // 1. Read Standard Riverpod State
     final labs = ref.watch(labProvider);
     final activeLabId = ref.watch(activeLabIdProvider);
     final viewMode = ref.watch(viewModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultColors = Theme.of(context).extension<CustomColors>()!;
-
-    // 2. Identify Active Lab
     final activeLab = labs.where((l) => l.id == activeLabId).firstOrNull;
 
-    // 3. Resolve Colors dynamically using our new utility!
-    // This perfectly calculates if we should use Lab custom colors or Global Theme colors.
-    final colors = ColorResolver.resolve(activeLab, defaultColors);
+    // 2. Read Global State
+    final isGlobalEnabled = ref.watch(globalOverrideProvider);
+    final globalProfile = ref.read(labProvider.notifier).getGlobalProfile();
+
+    // 3. Resolve Colors dynamically!
+    final colors = ColorResolver.resolve(
+      activeLab,
+      globalProfile,
+      isGlobalEnabled,
+      defaultColors,
+      isDark,
+    );
 
     final selectedPair = activeLab?.shadows
         .where((p) => p.id == selectedShadowId)
@@ -398,13 +405,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     dynamic activeLab,
     CustomColors colors,
   ) {
+    // Determine the current mode so the dialog knows which settings to edit
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: colors.bgc,
           title: Text(
-            "Customize Workspace",
+            "Customize Workspace (${isDark ? 'Dark Mode' : 'Light Mode'})",
             style: TextStyle(color: colors.mtext),
           ),
           content: Column(
@@ -415,7 +425,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 colors.bgc!,
                 (c) => ref
                     .read(labProvider.notifier)
-                    .updateWorkspaceColors(labId, bg: c),
+                    .updateWorkspaceColors(labId, isDarkMode: isDark, bg: c),
                 colors,
               ),
               _colorPickerRow(
@@ -423,7 +433,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 colors.blc!,
                 (c) => ref
                     .read(labProvider.notifier)
-                    .updateWorkspaceColors(labId, card: c),
+                    .updateWorkspaceColors(labId, isDarkMode: isDark, card: c),
                 colors,
               ),
               _colorPickerRow(
@@ -431,7 +441,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 colors.mtext!,
                 (c) => ref
                     .read(labProvider.notifier)
-                    .updateWorkspaceColors(labId, mText: c),
+                    .updateWorkspaceColors(labId, isDarkMode: isDark, mText: c),
                 colors,
               ),
               _colorPickerRow(
@@ -439,21 +449,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                 colors.stext!,
                 (c) => ref
                     .read(labProvider.notifier)
-                    .updateWorkspaceColors(labId, sText: c),
+                    .updateWorkspaceColors(labId, isDarkMode: isDark, sText: c),
                 colors,
               ),
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () {
+                  // Triggers explicit null state clearing function safely
                   ref
                       .read(labProvider.notifier)
-                      .updateWorkspaceColors(
-                        labId,
-                        bg: null,
-                        card: null,
-                        mText: null,
-                        sText: null,
-                      );
+                      .resetWorkspaceColors(labId, isDark);
                   Navigator.pop(context);
                 },
                 child: const Text(

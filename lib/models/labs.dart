@@ -30,6 +30,32 @@ class Lab {
   @HiveField(7)
   int? subTextColor;
 
+  // --- NEW: Separate Mode-Specific Configuration Slots ---
+  @HiveField(8)
+  int? lightBgColor;
+  @HiveField(9)
+  int? lightCardColor;
+  @HiveField(10)
+  int? lightMainTextColor;
+  @HiveField(11)
+  int? lightSubTextColor;
+
+  @HiveField(12)
+  int? darkBgColor;
+  @HiveField(13)
+  int? darkCardColor;
+  @HiveField(14)
+  int? darkMainTextColor;
+  @HiveField(15)
+  int? darkSubTextColor;
+
+  @HiveField(16)
+  int? slcColor;
+  @HiveField(17)
+  int? lightSlcColor;
+  @HiveField(18)
+  int? darkSlcColor;
+
   Lab({
     required this.id,
     required this.name,
@@ -39,6 +65,17 @@ class Lab {
     this.cardColor, // Defaults to null (Theme fallback)
     this.mainTextColor, // Defaults to null (Theme fallback)
     this.subTextColor, // Defaults to null (Theme fallback)
+    this.lightBgColor,
+    this.lightCardColor,
+    this.lightMainTextColor,
+    this.lightSubTextColor,
+    this.darkBgColor,
+    this.darkCardColor,
+    this.darkMainTextColor,
+    this.darkSubTextColor,
+    this.slcColor,
+    this.lightSlcColor,
+    this.darkSlcColor,
   });
 
   Lab copyWith({
@@ -50,6 +87,17 @@ class Lab {
     int? cardColor,
     int? mainTextColor,
     int? subTextColor,
+    int? slcColor,
+    int? Function()? lightBgColor,
+    int? Function()? lightCardColor,
+    int? Function()? lightMainTextColor,
+    int? Function()? lightSubTextColor,
+    int? Function()? darkBgColor,
+    int? Function()? darkCardColor,
+    int? Function()? darkMainTextColor,
+    int? Function()? darkSubTextColor,
+    int? Function()? lightSlcColor,
+    int? Function()? darkSlcColor,
   }) {
     return Lab(
       id: id ?? this.id,
@@ -61,6 +109,31 @@ class Lab {
       cardColor: cardColor ?? this.cardColor,
       mainTextColor: mainTextColor ?? this.mainTextColor,
       subTextColor: subTextColor ?? this.subTextColor,
+      slcColor: slcColor ?? this.slcColor,
+      lightBgColor: lightBgColor != null ? lightBgColor() : this.lightBgColor,
+      lightCardColor: lightCardColor != null
+          ? lightCardColor()
+          : this.lightCardColor,
+      lightMainTextColor: lightMainTextColor != null
+          ? lightMainTextColor()
+          : this.lightMainTextColor,
+      lightSubTextColor: lightSubTextColor != null
+          ? lightSubTextColor()
+          : this.lightSubTextColor,
+      darkBgColor: darkBgColor != null ? darkBgColor() : this.darkBgColor,
+      darkCardColor: darkCardColor != null
+          ? darkCardColor()
+          : this.darkCardColor,
+      darkMainTextColor: darkMainTextColor != null
+          ? darkMainTextColor()
+          : this.darkMainTextColor,
+      darkSubTextColor: darkSubTextColor != null
+          ? darkSubTextColor()
+          : this.darkSubTextColor,
+      lightSlcColor: lightSlcColor != null
+          ? lightSlcColor()
+          : this.lightSlcColor,
+      darkSlcColor: darkSlcColor != null ? darkSlcColor() : this.darkSlcColor,
     );
   }
 }

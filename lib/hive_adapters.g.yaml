@@ -43,7 +43,7 @@ types:
         index: 7
   Lab:
     typeId: 2
-    nextIndex: 8
+    nextIndex: 19
     fields:
       id:
         index: 0
@@ -61,3 +61,25 @@ types:
         index: 6
       subTextColor:
         index: 7
+      lightBgColor:
+        index: 8
+      lightCardColor:
+        index: 9
+      lightMainTextColor:
+        index: 10
+      lightSubTextColor:
+        index: 11
+      darkBgColor:
+        index: 12
+      darkCardColor:
+        index: 13
+      darkMainTextColor:
+        index: 14
+      darkSubTextColor:
+        index: 15
+      slcColor:
+        index: 16
+      lightSlcColor:
+        index: 17
+      darkSlcColor:
+        index: 18

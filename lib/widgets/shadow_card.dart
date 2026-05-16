@@ -7,6 +7,7 @@ import '../models/shadow_pair.dart';
 import '../utils/trig_math.dart';
 import '../colortheme.dart';
 import '../providers/shadow_provider.dart';
+import '../utils/color_logic.dart';
 
 class ShadowCard extends ConsumerWidget {
   final ShadowPair pair;
@@ -23,7 +24,25 @@ class ShadowCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colors = Theme.of(context).extension<CustomColors>()!;
+
+    // --- 1. Fetch Local Lab State ---
+    final labs = ref.watch(labProvider);
+    final activeLabId = ref.watch(activeLabIdProvider);
+    final activeLab = labs.where((l) => l.id == activeLabId).firstOrNull;
+    final defaultColors = Theme.of(context).extension<CustomColors>()!;
+
+    // --- 2. Fetch Global Profile State ---
+    final isGlobalEnabled = ref.watch(globalOverrideProvider);
+    final globalProfile = ref.read(labProvider.notifier).getGlobalProfile();
+
+    // --- 3. The Magic Resolver Line ---
+    final colors = ColorResolver.resolve(
+      activeLab,
+      globalProfile,
+      isGlobalEnabled,
+      defaultColors,
+      isDark,
+    );
 
     // Grab BOTH layers so we can render the dual-shadow effect
     final layer1 = isDark ? pair.dark : pair.light;
@@ -37,7 +56,7 @@ class ShadowCard extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         height: 80,
         decoration: inset.BoxDecoration(
-          color: colors.blc,
+          color: colors.blc, // Now uses the dynamic card color!
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             if (layer1.isVisible)
@@ -64,7 +83,6 @@ class ShadowCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // --- 2. THE DYNAMIC TEXT WRAPPER (Left) ---
-              // 'Flexible' shrinks to perfectly fit your text, but prevents overflow
               Flexible(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -84,7 +102,8 @@ class ShadowCard extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: colors.mtext,
+                          color: colors
+                              .mtext, // Now uses the dynamic main text color!
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -92,7 +111,11 @@ class ShadowCard extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         pair.subText,
-                        style: TextStyle(fontSize: 12, color: colors.stext),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors
+                              .stext, // Now uses the dynamic sub text color!
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -102,7 +125,6 @@ class ShadowCard extends ConsumerWidget {
               ),
 
               // --- 3. THE COPY BUTTON (Right) ---
-              // Stays perfectly anchored to the right side!
               IconButton(
                 icon: Icon(Icons.copy_all, color: colors.mtext),
                 onPressed: onCopy,
